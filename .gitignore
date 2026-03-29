@@ -1,0 +1,5 @@
+__pycache__/
+.venv/
+ebay_products.json
+ebay_products.csv
+ebay_scrap.pkl
