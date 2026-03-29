@@ -1,72 +1,147 @@
-eBay Global Deals Intelligence Scraper
+# 🕷️ EbayHunter — Stealth Web Scraper for eBay Global Deals
 
-A high-performance, anti-detection web scraper designed to aggregate real-time product data from eBay’s Global Deals platform. This project demonstrates advanced browser automation techniques, including behavioral simulation and stealth integration to bypass modern web-shielding technologies.
-🚀 Key Features
+> A production-grade, anti-detection web scraper that silently harvests deal data across eBay's top categories — built with Playwright, human-behavior simulation, and multi-format export pipelines.
 
-    Stealth Integration: Utilizes the Playwright Stealth API and custom browser context arguments to bypass navigator.webdriver detection and Chromium flags.
+---
 
-    Human-Centric Behavior: Implements randomized jitter, variable scrolling speeds, and element hovering to mimic organic user interaction.
+## 📸 Overview
 
-    Multi-Category Aggregation: Scrapes across 8+ major retail categories simultaneously.
+**EbayHunter** automates the discovery and extraction of discounted products from eBay's Global Deals pages. It navigates the site like a real user — randomized delays, mouse movement, viewport simulation — while collecting structured product data and exporting it to JSON, CSV, and Pickle formats for downstream analysis or integration.
 
-    Robust Error Handling: Handles Playwright "Strict Mode" violations and dynamic UI elements (like "Load More" buttons) gracefully.
+---
 
-    Data Portability: Exports cleaned data into CSV, JSON, and Pickle formats for easy analysis in Excel, Pandas, or PowerBI.
+## ✨ Features
 
-🛠️ Technical Stack
+- 🧠 **Anti-Detection Engine** — Randomized `User-Agent` rotation via `fake_useragent`, spoofed browser fingerprints, and `AutomationControlled` flag disabled
+- 🖱️ **Human Behavior Simulation** — Randomized scroll depth, hover-before-click patterns, and millisecond-range timing jitter
+- 📦 **Multi-Format Export** — Simultaneously saves to `.json`, `.csv`, and `.pkl` for maximum flexibility
+- 🔄 **Dynamic Content Handling** — Detects and clicks "Load More" buttons before scraping to maximize data yield
+- 🌐 **Multi-Category Scraping** — Covers 8 eBay deal categories in a single run (Electronics, Fashion, Automotive, Gaming, and more)
+- 🔒 **Resilient Request Layer** — `secure_request()` utility with proxy support, session reuse, and graceful HTTP error handling
+- 🏷️ **Rich Product Schema** — Captures name, price, product URL, delivery info, and refurbished status per item
 
-    Core: Python
+---
 
-    Automation: Playwright
+## 🗂️ Project Structure
 
-    Stealth: Playwright Stealth API & Custom User-Agent Spoofing
+```
+ebay-hunter/
+│
+├── ebay_scraper.py        # Main scraper — Playwright-powered, category-aware
+├── globalfunctions.py     # Shared utilities: pickle I/O, secure HTTP requests
+│
+├── ebay_scrap.pkl         # Binary export (Pickle)
+├── ebay_products.json     # Structured JSON export
+└── ebay_products.csv      # Flat CSV export
+```
 
-    Data Processing: JSON, CSV, Pickle
+---
 
-📋 Data Points Captured
+## 🚀 Getting Started
 
-The scraper extracts the following schema for every product:
-Variable	Description
-name	The full product title.
-price	Current deal price (including currency).
-link	The direct URL to the product page.
-delivery	Shipping information/speed.
-refurbished	Boolean flag (True/False) indicating "eBay Refurbished" status.
-⚙️ Installation & Usage
+### Prerequisites
 
-    Clone the repository:
-    Bash
+```bash
+pip install playwright fake-useragent requests
+playwright install chromium
+```
 
-    git clone https://github.com/yourusername/ebay-deals-scraper.git
-    cd ebay-deals-scraper
+### Run the scraper
 
-    Install dependencies:
-    Bash
+```bash
+python ebay_scraper.py
+```
 
-    pip install playwright playwright-stealth
-    playwright install chromium
+On completion, three output files are generated in the working directory:
 
-    Run the scraper:
-    Python
+| File | Format | Use Case |
+|---|---|---|
+| `ebay_products.json` | JSON | APIs, dashboards, front-end consumption |
+| `ebay_products.csv` | CSV | Excel, Google Sheets, pandas analysis |
+| `ebay_scrap.pkl` | Pickle | Python-native ML pipelines, fast reload |
 
-    python main.py
+---
 
-🧠 Challenges & Solutions
-1. Anti-Bot Detection
+## 🔬 Data Schema
 
-Problem: eBay employs sophisticated fingerprinting that detects standard automation.
-Solution: I implemented a custom browser context with a modified User-Agent and suppressed the AutomationControlled blink feature. I further added a human_delay function that introduces randomized pauses (500ms to 1500ms) to break the mechanical rhythm of the script.
-2. Strict Mode Violations
+Each scraped product follows this structure:
 
-Problem: eBay's HTML structure often uses the same itemprop attributes for both images and text links, causing Playwright to throw a "resolved to 2 elements" error.
-Solution: Refined locators using the .first property and scoped element searches within the dne-itemtile container to ensure 1:1 data mapping.
-3. Refurbished Status Verification
+```json
+{
+  "name": "Apple AirPods Pro (2nd Gen)",
+  "price": "$189.99",
+  "link": "https://www.ebay.com/itm/...",
+  "delivery": "Free shipping",
+  "refurbished": false
+}
+```
 
-Problem: The "eBay Refurbished" badge is not present on all items, and standard locators returned "True" even when the element was absent.
-Solution: Utilized the .count() method to perform a boolean check on the badge's existence within each specific product card.
-📄 License
+---
 
-Distributed under the MIT License. See LICENSE for more information.
-Implementation Note
+## 🛡️ Anti-Detection Architecture
 
-This project is for educational purposes only. Always check eBay's robots.txt and Terms of Service before scraping at scale.
+EbayHunter combines two layers of evasion:
+
+**Playwright Layer** (`ebay_scraper.py`)
+- Launches Chromium with `--disable-blink-features=AutomationControlled`
+- Injects a realistic `User-Agent` string and sets a `1920x1080` viewport
+- Randomizes scroll distance and interaction timing per page
+
+**Request Layer** (`globalfunctions.py`)
+- Rotates `User-Agent` on every request via `fake_useragent`
+- Sets browser-standard headers (`Accept-Language`, `Referer`, etc.)
+- Supports HTTP proxy injection for IP rotation
+- Applies a 1–5 second randomized delay between requests
+
+---
+
+## 📦 Utility: `globalfunctions.py`
+
+Two reusable utilities power the project's persistence and request layers:
+
+### `save_to_pickle` / `load_from_pickle`
+Binary serialization for fast Python-native storage and retrieval of any object.
+
+### `secure_request(url, method, headers, payload, proxies, session)`
+A drop-in replacement for `requests.get/post` with built-in anti-detection measures. Supports session reuse for cookie persistence across requests.
+
+```python
+response = secure_request("https://example.com", method="GET")
+response = secure_request("https://api.example.com/login", method="POST", payload={"user": "x"})
+```
+
+---
+
+## 🗺️ Scraped Categories
+
+| Category | URL |
+|---|---|
+| Home & Garden | `/globaldeals/home/more-home-garden` |
+| Lifestyle | `/globaldeals/featured/lifestyle` |
+| Business & Industrial | `/globaldeals/more/business-industrial` |
+| Automotive | `/globaldeals/more/automotive` |
+| Video Games & Consoles | `/globaldeals/tech/video-games-consoles` |
+| Fashion | `/globaldeals/featured/fashion` |
+| Men's Shoes & Accessories | `/globaldeals/fashion/mens-shoes-accessories` |
+| Electronics | `/globaldeals/featured/electronics` |
+
+---
+
+## ⚠️ Disclaimer
+
+This project is intended for **educational and personal research purposes only**. Scraping eBay may violate their [Terms of Service](https://www.ebay.com/help/policies/member-behaviour-policies/user-agreement?id=4259). Always review a website's `robots.txt` and ToS before scraping. The author is not responsible for any misuse.
+
+---
+
+## 🧰 Tech Stack
+
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-1.x-2EAD33?style=flat&logo=playwright&logoColor=white)
+![Requests](https://img.shields.io/badge/Requests-HTTP-FF6B35?style=flat)
+![CSV/JSON](https://img.shields.io/badge/Export-CSV%20%7C%20JSON%20%7C%20Pickle-lightgrey?style=flat)
+
+---
+
+## 📄 License
+
+MIT — free to use, modify, and distribute with attribution.
